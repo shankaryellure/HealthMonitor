@@ -14,6 +14,9 @@ public class ClientWindow {
     private JFrame mainFrame;
     private JTextArea logTextArea;
     private JPanel centerPanel;
+    private ButtonGroup healthConditionGroup = new ButtonGroup();
+    private ButtonGroup priorityLevelGroup = new ButtonGroup();
+    private JButton sendButton;
 
     public ClientWindow(String clientId) {
         this.clientId = clientId;
@@ -48,30 +51,43 @@ public class ClientWindow {
         mainFrame.setTitle("Patient Monitoring Client - " + device);
         centerPanel.setVisible(false);
 
+        // Setup health conditions radio buttons
         JPanel conditionPanel = new JPanel(new GridLayout(0, 1));
         JScrollPane conditionScrollPane = new JScrollPane(conditionPanel);
         conditionScrollPane.setBorder(BorderFactory.createTitledBorder("Health Conditions"));
 
+        // Setup priority levels radio buttons
         JPanel priorityPanel = new JPanel(new GridLayout(0, 1));
         JScrollPane priorityScrollPane = new JScrollPane(priorityPanel);
         priorityScrollPane.setBorder(BorderFactory.createTitledBorder("Priority Levels"));
 
+        // Setup the send button
+        sendButton = new JButton("Send Update");
+        sendButton.setEnabled(false); // Initially disabled
+
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, conditionScrollPane, priorityScrollPane);
         splitPane.setResizeWeight(0.5);
 
+        // Add health conditions to ButtonGroup and panel
         String[] conditions = getConditionsForDevice(device);
         for (String condition : conditions) {
             JRadioButton conditionButton = new JRadioButton(condition);
+            healthConditionGroup.add(conditionButton);
             conditionPanel.add(conditionButton);
+            conditionButton.addActionListener(e -> updateSendButtonState());
         }
 
+        // Add priority levels to ButtonGroup and panel
         String[] priorities = {"Routine", "Moderate", "Urgent", "Critical", "Immediate"};
         for (String priority : priorities) {
             JRadioButton priorityButton = new JRadioButton(priority);
+            priorityLevelGroup.add(priorityButton);
             priorityPanel.add(priorityButton);
+            priorityButton.addActionListener(e -> updateSendButtonState());
         }
 
-        JButton sendButton = new JButton("Send Update");
+        sendButton = new JButton("Send Update"); // Use the class member
+        sendButton.setEnabled(false); // Initially, the button is disabled
         sendButton.addActionListener(e -> {
             System.out.println("Update sent for device: " + device);
             resetUI();
@@ -89,6 +105,20 @@ public class ClientWindow {
         mainFrame.setTitle("Patient Monitoring Client - " + device + " - Client ID: " + clientId);
 
     }
+
+    private void updateSendButtonState() {
+        sendButton.setEnabled(isHealthConditionSelected() && isPriorityLevelSelected());
+    }
+    // Helper method to check if a health condition is selected
+    private boolean isHealthConditionSelected() {
+        return healthConditionGroup.getSelection() != null;
+    }
+
+    // Helper method to check if a priority level is selected
+    private boolean isPriorityLevelSelected() {
+        return priorityLevelGroup.getSelection() != null;
+    }
+
 
     private String[] getConditionsForDevice(String device) {
         switch (device) {
@@ -135,6 +165,8 @@ public class ClientWindow {
                 return new String[]{};
         }
     }
+
+
 
     private void resetUI() {
         mainFrame.setTitle("Select Device");
