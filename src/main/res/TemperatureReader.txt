@@ -1,0 +1,5 @@
+deviceType=Temperature Reader
+deviceId=005
+healthConditions=Elevated Body Temperature (Fever) - High body temperature;Dangerously Low Body Temperature (Hypothermia) - Dangerously low body temperature;Abnormally High Body Temperature (Hyperthermia) - Extremely high body temperature;Severe Heat-Related Illness (Heat Stroke) - Serious heat-related condition;Infection-Induced Systemic Response (Sepsis) - Extreme body response to infection
+priorityLevels=Routine,Moderate,Urgent,Critical,Immediate
+key=8765432109876543

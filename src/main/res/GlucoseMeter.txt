@@ -1,0 +1,5 @@
+deviceType=Glucose Meter
+deviceId=004
+healthConditions=High Blood Sugar (Hyperglycemia) - Too much sugar in blood;Low Blood Sugar (Hypoglycemia) - Too little sugar in blood;Diabetic Complication (Diabetic Ketoacidosis - DKA) - Serious diabetes issue;Diabetic Emergency (Hyperosmolar Hyperglycemic State - HHS) - Critical diabetes problem;Insensitivity to Low Blood Sugar (Hypoglycemic Unawareness) - Can't detect low sugar
+priorityLevels=Routine,Moderate,Urgent,Critical,Immediate
+key=UniqueKeyForGlucoseMeter

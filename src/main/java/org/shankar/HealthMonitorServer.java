@@ -1,49 +1,27 @@
 package org.shankar;
 
-import java.io.*;
-import java.net.*;
-import java.util.concurrent.*;
-import java.util.logging.*;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class HealthMonitorServer {
-    private ServerSocket serverSocket;
-    private ExecutorService executorService;
-    private Logger logger = Logger.getLogger("ServerLogger");
-    private static int clientCount = 0;
-    private final Object lock = new Object();
-
-    public HealthMonitorServer(int port) {
-        try {
-            serverSocket = new ServerSocket(port);
-            executorService = Executors.newCachedThreadPool();
-            logger.info("Server started on port " + port);
-
-            acceptClients();
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, "Server failed to start", e);
-        }
-    }
-
-    private void acceptClients() {
-        while (true) {
-            try {
-                Socket clientSocket = serverSocket.accept();
-                int clientId = getNextClientId();
-                logger.info("Client " + clientId + " connected: " + clientSocket);
-                executorService.execute(new ClientHandler(clientSocket, clientId));
-            } catch (IOException e) {
-                logger.log(Level.SEVERE, "Error accepting client connection", e);
-            }
-        }
-    }
-
-    private int getNextClientId() {
-        synchronized (lock) {
-            return ++clientCount; // Increment and return to ensure uniqueness
-        }
-    }
+    private static final Logger logger = Logger.getLogger(HealthMonitorServer.class.getName());
+    private static final int DEFAULT_PORT = 4321;
 
     public static void main(String[] args) {
-        new HealthMonitorServer(54357); // Server port number
+        int port = args.length > 0 ? Integer.parseInt(args[0]) : DEFAULT_PORT;
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            logger.info("Server listening on port " + port);
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                logger.info("Client connected");
+                ClientHandler handler = new ClientHandler(clientSocket);
+                new Thread(handler).start();
+            }
+        } catch (IOException e) {
+            logger.log(Level.SEVERE, "Server could not start", e);
+        }
     }
 }
