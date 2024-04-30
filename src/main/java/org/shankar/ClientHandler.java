@@ -32,14 +32,15 @@ public class ClientHandler implements Runnable {
             while (true) {
                 if (this.in.available() > 0) {
                     String message = in.readUTF();
-                    String[] parts = message.split(",", 3);
-                    if (parts.length != 3) {
+                    String[] parts = message.split(",", 4);
+                    if (parts.length != 4) {
                         logger.warning("Invalid message format received: " + message);
                         continue;
                     }
                     String clientId = parts[0].trim();
                     String deviceId = parts[1].trim();
-                    String encryptedData = parts[2].trim();
+                    String deviceType = parts[2].trim();
+                    String encryptedData = parts[3].trim();
 
                     String key = getKey(deviceId);
                     if (key == null) {
@@ -48,7 +49,7 @@ public class ClientHandler implements Runnable {
                     }
 
                     String decryptedData = decrypt(encryptedData, key);
-                    logger.info("Decrypted message from Client ID " + clientId + " Device ID " + deviceId + ": " + decryptedData);
+                    logger.info("Decrypted message from Client ID: " + clientId +  ", Device type: " + deviceType + ", Device ID: "+ deviceId + "," +decryptedData);
 
                     // Split the decrypted data to extract the priority and condition
                     String[] dataParts = decryptedData.split(";");
@@ -62,7 +63,7 @@ public class ClientHandler implements Runnable {
                     if ("Immediate".equalsIgnoreCase(priorityLevel)) {
                         // If running on a system with a GUI, you might use JOptionPane here; otherwise, log it differently
                         logger.severe("ALERT: Immediate attention needed for client " + clientId);
-                        System.out.println("***** ALERT ***** Immediate attention needed for client " + clientId + ": " + healthCondition);
+                        System.out.println("***** ALERT ***** Immediate attention needed for client: " + clientId + ", " + healthCondition);
                     }
                 } else {
                     try {

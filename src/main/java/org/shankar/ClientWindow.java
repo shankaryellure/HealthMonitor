@@ -148,7 +148,7 @@ public class ClientWindow extends JFrame {
         try {
             String key = deviceConfig.getProperty("key"); // Ensure this is correctly fetched
             String encryptedData = encrypt(dataToEncrypt, key);
-            String message = clientId + "," + deviceConfig.getProperty("deviceId") + "," + encryptedData;
+            String message = clientId + "," + deviceConfig.getProperty("deviceId") + "," + deviceConfig.getProperty("deviceType") + "," + encryptedData;
             System.out.println("Sending message: " + message); // Log the message being sent
             out.writeUTF(message);
             out.flush();
