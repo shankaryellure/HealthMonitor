@@ -43,8 +43,9 @@ public class ClientWindow extends JFrame {
         return String.format("%06d", num); // Generates a 6 digit ID with leading zeros if necessary
     }
 
-    private String encrypt(String data, String key) throws Exception {
-        Key aesKey = new SecretKeySpec(key.getBytes(), "AES");
+    private String encrypt(String data, String base64Key) throws Exception {
+        byte[] key = Base64.getDecoder().decode(base64Key);  // Decode the base64 encoded key
+        SecretKeySpec aesKey = new SecretKeySpec(key, "AES");
         Cipher cipher = Cipher.getInstance("AES");
         cipher.init(Cipher.ENCRYPT_MODE, aesKey);
         byte[] encrypted = cipher.doFinal(data.getBytes());
@@ -54,7 +55,7 @@ public class ClientWindow extends JFrame {
     private void initializeNetworkConnection() {
         try {
             // Replace with your server's IP and port
-            clientSocket = new Socket("10.111.118.73", 4321);
+            clientSocket = new Socket("10.0.0.20", 4321);
             out = new DataOutputStream(clientSocket.getOutputStream());
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Failed to connect to server: " + e.getMessage(), "Connection Error", JOptionPane.ERROR_MESSAGE);
@@ -142,13 +143,16 @@ public class ClientWindow extends JFrame {
     private void sendUpdate(ActionEvent event) {
         String condition = conditionGroup.getSelection().getActionCommand();
         String priority = priorityGroup.getSelection().getActionCommand();
-        String message = String.format("Device ID: %s, Condition: %s, Priority: %s", clientId, condition, priority);
+        String dataToEncrypt = "Condition: " + condition + "; Priority: " + priority;
 
         try {
-            String key = deviceConfig.getProperty("key"); // Assuming 'deviceConfig' is already loaded with properties
-            String encryptedMessage = encrypt(message, key);
-            out.writeUTF(encryptedMessage); // Send the encrypted message to the server
+            String key = deviceConfig.getProperty("key"); // Ensure this is correctly fetched
+            String encryptedData = encrypt(dataToEncrypt, key);
+            String message = clientId + "," + deviceConfig.getProperty("deviceId") + "," + encryptedData;
+            System.out.println("Sending message: " + message); // Log the message being sent
+            out.writeUTF(message);
             out.flush();
+            JOptionPane.showMessageDialog(this, "Update sent successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Failed to encrypt or send update: " + e.getMessage(), "Encryption Error", JOptionPane.ERROR_MESSAGE);
         }

@@ -1,5 +1,5 @@
 deviceType=SpO2 Monitor
-deviceId=003
+deviceId=004
 healthConditions=Low Oxygen Levels (Hypoxemia) - Blood has too little oxygen;Difficulty Breathing (Respiratory Distress) - Breathing is hard or labored;Carbon Monoxide Poisoning - Inhaling carbon monoxide, a toxic gas;Blood Clot in Lung (Pulmonary Embolism) - Blockage in lung
 priorityLevels=Routine,Moderate,Urgent,Critical,Immediate
-key=5647382910564738
+key=FliIRjs2uh+gsYcX+Y8DWBPV2JqyqPDq1aGmYR8VkhQ=
