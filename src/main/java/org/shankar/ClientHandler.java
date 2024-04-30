@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
+import javax.swing.JOptionPane;
 
 public class ClientHandler implements Runnable {
     private Socket clientSocket;
@@ -32,10 +33,9 @@ public class ClientHandler implements Runnable {
             while (true) {
                 if (this.in.available() > 0) {
                     String message = in.readUTF();
-                    logger.info("Received message: " + message);  // Log the raw message
                     String[] parts = message.split(",", 3);
                     if (parts.length != 3) {
-                        logger.warning("Invalid message format received: " + message + " | Expected format: 'clientId,deviceId,encryptedData'");
+                        logger.warning("Invalid message format received: " + message);
                         continue;
                     }
                     String clientId = parts[0].trim();
@@ -50,12 +50,25 @@ public class ClientHandler implements Runnable {
 
                     String decryptedData = decrypt(encryptedData, key);
                     logger.info("Decrypted message from Client ID " + clientId + " Device ID " + deviceId + ": " + decryptedData);
-                } else {
-                    try {
-                        Thread.sleep(100);  // Reduce CPU usage if no data is available
-                    } catch (InterruptedException ie) {
-                        logger.log(Level.WARNING, "Thread interrupted", ie);
+
+                    // Extracting health condition and priority level
+                    String[] dataParts = decryptedData.split(";");
+                    if (dataParts.length != 2) {
+                        logger.warning("Decrypted message format is invalid: " + decryptedData);
+                        continue;
                     }
+                    String healthCondition = dataParts[0].trim();
+                    String priorityLevel = dataParts[1].trim();
+
+                    // Log to the database
+                    Database.logUpdate(clientId, deviceId, healthCondition, priorityLevel);
+
+                    // Check for immediate priority and display a pop-up if necessary
+                    if ("Immediate".equalsIgnoreCase(priorityLevel)) {
+                        JOptionPane.showMessageDialog(null, "Immediate attention needed for Client ID: " + clientId + " with condition: " + healthCondition, "Immediate Alert", JOptionPane.WARNING_MESSAGE);
+                    }
+                } else {
+                    Thread.sleep(100);  // Reduce CPU usage if no data is available
                 }
             }
         } catch (Exception e) {
