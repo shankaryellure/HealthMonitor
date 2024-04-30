@@ -11,7 +11,6 @@ import java.util.logging.Logger;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
-import javax.swing.JOptionPane;
 
 public class ClientHandler implements Runnable {
     private Socket clientSocket;
@@ -51,24 +50,26 @@ public class ClientHandler implements Runnable {
                     String decryptedData = decrypt(encryptedData, key);
                     logger.info("Decrypted message from Client ID " + clientId + " Device ID " + deviceId + ": " + decryptedData);
 
-                    // Extracting health condition and priority level
+                    // Split the decrypted data to extract the priority and condition
                     String[] dataParts = decryptedData.split(";");
-                    if (dataParts.length != 2) {
-                        logger.warning("Decrypted message format is invalid: " + decryptedData);
-                        continue;
-                    }
                     String healthCondition = dataParts[0].trim();
-                    String priorityLevel = dataParts[1].trim();
+                    String priorityLevel = dataParts[1].trim().split(":")[1].trim(); // Get the priority description after colon
 
                     // Log to the database
                     Database.logUpdate(clientId, deviceId, healthCondition, priorityLevel);
 
-                    // Check for immediate priority and display a pop-up if necessary
+                    // Check for immediate priority and display an alert if necessary
                     if ("Immediate".equalsIgnoreCase(priorityLevel)) {
-                        JOptionPane.showMessageDialog(null, "Immediate attention needed for Client ID: " + clientId + " with condition: " + healthCondition, "Immediate Alert", JOptionPane.WARNING_MESSAGE);
+                        // If running on a system with a GUI, you might use JOptionPane here; otherwise, log it differently
+                        logger.severe("ALERT: Immediate attention needed for client " + clientId);
+                        System.out.println("***** ALERT ***** Immediate attention needed for client " + clientId + ": " + healthCondition);
                     }
                 } else {
-                    Thread.sleep(100);  // Reduce CPU usage if no data is available
+                    try {
+                        Thread.sleep(100);  // Reduce CPU usage if no data is available
+                    } catch (InterruptedException ie) {
+                        logger.log(Level.WARNING, "Thread interrupted", ie);
+                    }
                 }
             }
         } catch (Exception e) {
