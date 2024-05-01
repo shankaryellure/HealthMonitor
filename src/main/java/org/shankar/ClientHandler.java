@@ -16,7 +16,7 @@ public class ClientHandler implements Runnable {
     private DataInputStream in;
     private DataOutputStream out;
     private Logger logger = Logger.getLogger("ClientHandlerLogger");
-    private Map<Socket, File> clientFiles = new HashMap<>(); // Map to store files sent to clients
+    private Map<Socket, File> clientFiles = new HashMap<>();
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -37,7 +37,7 @@ public class ClientHandler implements Runnable {
             logger.log(Level.SEVERE, "Error processing messages", e);
         } finally {
             try {
-                clientFiles.remove(clientSocket);  // Remove the mapping when the client disconnects
+                clientFiles.remove(clientSocket);
                 clientSocket.close();
             } catch (IOException e) {
                 logger.log(Level.SEVERE, "Error closing client socket", e);
@@ -51,13 +51,13 @@ public class ClientHandler implements Runnable {
         File[] files = folder.listFiles((dir, name) -> name.endsWith(".txt"));
         if (files != null && files.length > 0) {
             File file = files[new Random().nextInt(files.length)];
-            clientFiles.put(clientSocket, file); // Store the file sent to this client
+            clientFiles.put(clientSocket, file);
             BufferedReader fileReader = new BufferedReader(new FileReader(file));
             String line;
             while ((line = fileReader.readLine()) != null) {
-                out.writeUTF(line);  // Send each line of the file to the client, including the key
+                out.writeUTF(line);
             }
-            out.writeUTF("EOF");  // Signal end of the file transmission
+            out.writeUTF("EOF");
         } else {
             out.writeUTF("No device details available");
         }
@@ -68,7 +68,7 @@ public class ClientHandler implements Runnable {
             while (true) {
                 String encryptedMessage = in.readUTF();
                 if ("EOF".equals(encryptedMessage)) {
-                    break; // Stop processing if EOF is reached
+                    break;
                 }
 
                 File file = clientFiles.get(clientSocket);
@@ -78,7 +78,6 @@ public class ClientHandler implements Runnable {
                         String decryptedMessage = decrypt(encryptedMessage, key);
                         logger.info("Decrypted message: " + decryptedMessage);
 
-                        // Using regex to match the structure of each part
                         Map<String, String> messageMap = parseMessage(decryptedMessage);
 
                         String clientId = messageMap.get("Client ID");
@@ -105,8 +104,6 @@ public class ClientHandler implements Runnable {
             logger.log(Level.SEVERE, "IO error in client communication", e);
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Error decrypting message", e);
-        } finally {
-            // Clean up code here if needed
         }
     }
 
@@ -114,7 +111,7 @@ public class ClientHandler implements Runnable {
         Map<String, String> data = new HashMap<>();
         String[] parts = decryptedMessage.split(", ");
         for (String part : parts) {
-            String[] keyValue = part.split(": ", 2); // Split only on the first colon
+            String[] keyValue = part.split(": ", 2);
             if (keyValue.length == 2) {
                 data.put(keyValue[0].trim(), keyValue[1].trim());
             }

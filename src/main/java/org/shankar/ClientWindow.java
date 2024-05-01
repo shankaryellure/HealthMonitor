@@ -40,7 +40,7 @@ public class ClientWindow extends JFrame {
     }
 
     private void updateWindowTitle() {
-        setTitle("Health Monitor Client: " + clientId); // Update the window title with the generated client ID
+        setTitle("Health Monitor Client: " + clientId);
     }
 
     private void initializeNetworkConnection() {
@@ -86,7 +86,7 @@ public class ClientWindow extends JFrame {
         sendButton.addActionListener(this::sendUpdate);
         mainPanel.add(sendButton);
 
-        setSize(600, 600); // Increased window size
+        setSize(700, 600);
         setVisible(true);
     }
 
@@ -152,11 +152,9 @@ public class ClientWindow extends JFrame {
             String selectedCondition = getSelectedButtonText(conditionPanel);
             String selectedPriority = getSelectedButtonText(priorityPanel);
 
-            // Format the data into a single string
             String dataToSend = String.format("Client ID: %s, Device Type: %s, Device ID: %s, Health Condition: %s, Priority Level: %s",
                     clientId, deviceType, deviceId, selectedCondition, selectedPriority);
 
-            // Encrypt the data if key is available
             if (encryptionKey != null && !encryptionKey.isEmpty()) {
                 System.out.println("Encryption key is available. Encrypting message...");
                 String encryptedData = encrypt(dataToSend, encryptionKey);
@@ -182,7 +180,7 @@ public class ClientWindow extends JFrame {
                 }
             }
         }
-        return ""; // Return empty string if no selection
+        return "";
     }
 
     public static void main(String[] args) {
