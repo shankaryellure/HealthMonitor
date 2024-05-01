@@ -1,6 +1,5 @@
 package org.shankar;
 
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -8,157 +7,136 @@ import java.io.*;
 import java.net.Socket;
 import java.util.Properties;
 import java.util.Random;
-import java.security.Key;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
 
-
 public class ClientWindow extends JFrame {
     private JLabel deviceNameLabel;
     private JLabel deviceIdLabel;
-    private ButtonGroup conditionGroup;
-    private ButtonGroup priorityGroup;
+    private JPanel conditionPanel;
+    private JPanel priorityPanel;
     private JButton sendButton;
-    private Properties deviceConfig;
-    private String configDirectory;
     private JPanel mainPanel;
+    private JScrollPane scrollPaneConditions;
+    private JScrollPane scrollPanePriorities;
     private String clientId;
     private Socket clientSocket;
     private DataOutputStream out;
+    private DataInputStream in;
 
-
-    public ClientWindow(String configDirectory) {
-        this.configDirectory = configDirectory;
-        this.deviceConfig = new Properties();
+    public ClientWindow() {
         this.clientId = generateClientId();
-        loadRandomConfiguration();
-        initializeNetworkConnection();
         initializeUI();
+        initializeNetworkConnection();
+        fetchConfigurationFromServer();
     }
 
     private String generateClientId() {
         Random random = new Random();
-        int num = random.nextInt(999999);
-        return String.format("%06d", num); // Generates a 6 digit ID with leading zeros if necessary
-    }
-
-    private String encrypt(String data, String base64Key) throws Exception {
-        byte[] key = Base64.getDecoder().decode(base64Key);  // Decode the base64 encoded key
-        SecretKeySpec aesKey = new SecretKeySpec(key, "AES");
-        Cipher cipher = Cipher.getInstance("AES");
-        cipher.init(Cipher.ENCRYPT_MODE, aesKey);
-        byte[] encrypted = cipher.doFinal(data.getBytes());
-        return Base64.getEncoder().encodeToString(encrypted);
+        return String.format("%06d", random.nextInt(999999));
     }
 
     private void initializeNetworkConnection() {
         try {
-            // Replace with your server's IP and port
-            clientSocket = new Socket("10.0.0.20", 4321);
+            clientSocket = new Socket("10.111.118.73", 4321);
             out = new DataOutputStream(clientSocket.getOutputStream());
+            in = new DataInputStream(clientSocket.getInputStream());
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "Failed to connect to server: " + e.getMessage(), "Connection Error", JOptionPane.ERROR_MESSAGE);
-            System.exit(1); // Or handle reconnection logic
-        }
-    }
-
-    private void initializeUI() {
-        setTitle(String.format("Health Monitor Client with ID: %s", clientId));
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout(10, 10));
-
-        // Styling the main content panel
-        mainPanel = new JPanel();
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        getContentPane().add(mainPanel);
-
-        // Styling the device labels
-        deviceNameLabel = new JLabel("Device Type: " + deviceConfig.getProperty("deviceType"));
-        deviceIdLabel = new JLabel("Device ID: " + deviceConfig.getProperty("deviceId"));
-        deviceNameLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        deviceIdLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        deviceNameLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
-        deviceIdLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
-        mainPanel.add(deviceNameLabel);
-        mainPanel.add(deviceIdLabel);
-
-        // Creating and styling radio button panels for health conditions and priorities
-        JPanel conditionPanel = createRadioPanel("Health Conditions", deviceConfig.getProperty("healthConditions").split(";"), true);
-        JPanel priorityPanel = createRadioPanel("Priority Levels", deviceConfig.getProperty("priorityLevels").split(","), false);
-
-        // Styling and adding send button
-        sendButton = new JButton("Send Update");
-        sendButton.addActionListener(this::sendUpdate);
-        sendButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        // Adding all elements to the main panel
-        mainPanel.add(conditionPanel);
-        mainPanel.add(priorityPanel);
-        mainPanel.add(sendButton);
-
-        pack(); // Adjust the window size based on its content
-        setLocationRelativeTo(null); // Center the window
-        setVisible(true);
-    }
-
-    private JPanel createRadioPanel(String title, String[] options, boolean isCondition) {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createTitledBorder(title));
-
-        ButtonGroup group = new ButtonGroup();
-        for (String option : options) {
-            JRadioButton button = new JRadioButton(option);
-            button.setActionCommand(option);
-            group.add(button);
-            panel.add(button);
-        }
-
-        if (isCondition) {
-            conditionGroup = group;
-        } else {
-            priorityGroup = group;
-        }
-        return panel;
-    }
-
-    private void loadRandomConfiguration() {
-        File dir = new File(configDirectory);
-        String[] configurations = dir.list((dir1, name) -> name.endsWith(".txt"));
-        if (configurations == null || configurations.length == 0) {
-            throw new IllegalStateException("No configuration files found.");
-        }
-        Random rand = new Random();
-        String selectedConfig = configurations[rand.nextInt(configurations.length)];
-        try (FileInputStream in = new FileInputStream(new File(configDirectory, selectedConfig))) {
-            deviceConfig.load(in);
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Failed to load device configuration: " + e.getMessage(), "Configuration Error", JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
     }
 
-    private void sendUpdate(ActionEvent event) {
-        String condition = conditionGroup.getSelection().getActionCommand();
-        String priority = priorityGroup.getSelection().getActionCommand();
-        String dataToEncrypt = "Condition: " + condition + "; Priority: " + priority;
+    private void initializeUI() {
+        setTitle("Health Monitor Client");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
 
+        mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        getContentPane().add(mainPanel, BorderLayout.CENTER);
+
+        deviceNameLabel = new JLabel("Device Type: Not Set");
+        deviceIdLabel = new JLabel("Device ID: Not Set");
+        mainPanel.add(deviceNameLabel);
+        mainPanel.add(deviceIdLabel);
+
+        conditionPanel = new JPanel();
+        conditionPanel.setLayout(new BoxLayout(conditionPanel, BoxLayout.Y_AXIS));
+        conditionPanel.setBorder(BorderFactory.createTitledBorder("Health Conditions"));
+        scrollPaneConditions = new JScrollPane(conditionPanel);
+        scrollPaneConditions.setPreferredSize(new Dimension(480, 200));
+        mainPanel.add(scrollPaneConditions);
+
+        priorityPanel = new JPanel();
+        priorityPanel.setLayout(new BoxLayout(priorityPanel, BoxLayout.Y_AXIS));
+        priorityPanel.setBorder(BorderFactory.createTitledBorder("Priority Levels"));
+        scrollPanePriorities = new JScrollPane(priorityPanel);
+        scrollPanePriorities.setPreferredSize(new Dimension(480, 120));
+        mainPanel.add(scrollPanePriorities);
+
+        sendButton = new JButton("Send Update");
+        sendButton.addActionListener(this::sendUpdate);
+        mainPanel.add(sendButton);
+
+        setSize(600, 600); // Increased window size
+        setVisible(true);
+    }
+
+    private void fetchConfigurationFromServer() {
         try {
-            String key = deviceConfig.getProperty("key"); // Ensure this is correctly fetched
-            String encryptedData = encrypt(dataToEncrypt, key);
-            String message = clientId + "," + deviceConfig.getProperty("deviceId") + "," + deviceConfig.getProperty("deviceType") + "," + encryptedData;
-            System.out.println("Sending message: " + message); // Log the message being sent
-            out.writeUTF(message);
+            Properties deviceDetails = new Properties();
+            String line;
+            while (!(line = in.readUTF()).equals("EOF")) {
+                int delimiterIndex = line.indexOf('=');
+                if (delimiterIndex != -1) {
+                    String key = line.substring(0, delimiterIndex).trim();
+                    String value = line.substring(delimiterIndex + 1).trim();
+                    deviceDetails.setProperty(key, value);
+                }
+            }
+            updateDeviceDetails(deviceDetails);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Failed to receive device details: " + e.getMessage(), "Connection Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }
+
+    private void updateDeviceDetails(Properties details) {
+        deviceNameLabel.setText("Device Type: " + details.getProperty("deviceType", "Not Set"));
+        deviceIdLabel.setText("Device ID: " + details.getProperty("deviceId", "Not Set"));
+        updateRadioButtons(conditionPanel, details.getProperty("healthConditions"), ";");
+        updateRadioButtons(priorityPanel, details.getProperty("priorityLevels"), ",");
+    }
+
+    private void updateRadioButtons(JPanel panel, String data, String delimiter) {
+        panel.removeAll();
+        if (data != null) {
+            ButtonGroup group = new ButtonGroup();
+            String[] items = data.split(delimiter);
+            for (String item : items) {
+                JRadioButton button = new JRadioButton(item.trim());  // Creates button with trimmed item text
+                group.add(button);
+                panel.add(button);
+            }
+        }
+        panel.revalidate();
+        panel.repaint();
+    }
+
+    private void sendUpdate(ActionEvent event) {
+        try {
+            String message = "Response from client";
+            out.writeUTF(clientId + "," + message);
             out.flush();
-            JOptionPane.showMessageDialog(this, "Update sent successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Message sent successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Failed to encrypt or send update: " + e.getMessage(), "Encryption Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Failed to send message: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     public static void main(String[] args) {
-        new ClientWindow("/Users/shankaryellure/Desktop/HealthMonitor/src/main/res/");
+        new ClientWindow();
     }
 }

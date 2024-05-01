@@ -11,7 +11,6 @@ public class Database {
     private static Connection connection = null;
     private static final Logger logger = Logger.getLogger("DatabaseLogger");
 
-    // Synchronized method to handle multi-threaded access
     public static synchronized Connection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
             try {
@@ -22,7 +21,7 @@ public class Database {
                 logger.info("Database connected!");
             } catch (SQLException e) {
                 logger.log(Level.SEVERE, "Error connecting to database: " + e.getMessage());
-                throw e;  // Rethrow the exception to handle it outside
+                throw e;
             }
         }
         return connection;

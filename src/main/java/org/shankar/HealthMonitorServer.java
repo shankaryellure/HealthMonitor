@@ -18,8 +18,7 @@ public class HealthMonitorServer {
             serverSocket = new ServerSocket(port);
             logger.info("Server listening on port " + port);
 
-            // Ensure the database is connected before starting to accept client connections
-            Database.getConnection();  // This may throw SQLException if the database connection fails
+            Database.getConnection();
             logger.info("Database connected!");
 
             while (true) {
