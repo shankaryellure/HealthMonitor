@@ -24,17 +24,23 @@ public class ClientWindow extends JFrame {
     private Socket clientSocket;
     private DataOutputStream out;
     private DataInputStream in;
+    private String encryptionKey;
 
     public ClientWindow() {
         this.clientId = generateClientId();
         initializeUI();
         initializeNetworkConnection();
         fetchConfigurationFromServer();
+        updateWindowTitle();
     }
 
     private String generateClientId() {
         Random random = new Random();
         return String.format("%06d", random.nextInt(999999));
+    }
+
+    private void updateWindowTitle() {
+        setTitle("Health Monitor Client: " + clientId); // Update the window title with the generated client ID
     }
 
     private void initializeNetworkConnection() {
@@ -93,7 +99,11 @@ public class ClientWindow extends JFrame {
                 if (delimiterIndex != -1) {
                     String key = line.substring(0, delimiterIndex).trim();
                     String value = line.substring(delimiterIndex + 1).trim();
-                    deviceDetails.setProperty(key, value);
+                    if ("key".equals(key)) {
+                        encryptionKey = value;
+                    } else {
+                        deviceDetails.setProperty(key, value);
+                    }
                 }
             }
             updateDeviceDetails(deviceDetails);
@@ -101,6 +111,15 @@ public class ClientWindow extends JFrame {
             JOptionPane.showMessageDialog(this, "Failed to receive device details: " + e.getMessage(), "Connection Error", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
+    }
+
+    private String encrypt(String data, String base64Key) throws Exception {
+        byte[] key = Base64.getDecoder().decode(base64Key);
+        SecretKeySpec aesKey = new SecretKeySpec(key, "AES");
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, aesKey);
+        byte[] encrypted = cipher.doFinal(data.getBytes());
+        return Base64.getEncoder().encodeToString(encrypted);
     }
 
     private void updateDeviceDetails(Properties details) {
@@ -127,13 +146,43 @@ public class ClientWindow extends JFrame {
 
     private void sendUpdate(ActionEvent event) {
         try {
-            String message = "Response from client";
-            out.writeUTF(clientId + "," + message);
-            out.flush();
-            JOptionPane.showMessageDialog(this, "Message sent successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
+            // Collect all relevant data
+            String deviceType = deviceNameLabel.getText().replace("Device Type: ", "");
+            String deviceId = deviceIdLabel.getText().replace("Device ID: ", "");
+            String selectedCondition = getSelectedButtonText(conditionPanel);
+            String selectedPriority = getSelectedButtonText(priorityPanel);
+
+            // Format the data into a single string
+            String dataToSend = String.format("Client ID: %s, Device Type: %s, Device ID: %s, Health Condition: %s, Priority Level: %s",
+                    clientId, deviceType, deviceId, selectedCondition, selectedPriority);
+
+            // Encrypt the data if key is available
+            if (encryptionKey != null && !encryptionKey.isEmpty()) {
+                System.out.println("Encryption key is available. Encrypting message...");
+                String encryptedData = encrypt(dataToSend, encryptionKey);
+                System.out.println("Encrypted message: " + encryptedData); // Log the encrypted message
+                out.writeUTF(encryptedData);
+                out.flush();
+                JOptionPane.showMessageDialog(this, "Encrypted message sent successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Encryption key is not available", "Encryption Error", JOptionPane.ERROR_MESSAGE);
+            }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Failed to send message: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Failed to send encrypted message: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
+    }
+
+    private String getSelectedButtonText(JPanel panel) {
+        for (Component comp : panel.getComponents()) {
+            if (comp instanceof JRadioButton) {
+                JRadioButton button = (JRadioButton) comp;
+                if (button.isSelected()) {
+                    return button.getText();
+                }
+            }
+        }
+        return ""; // Return empty string if no selection
     }
 
     public static void main(String[] args) {
